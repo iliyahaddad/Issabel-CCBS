@@ -1,0 +1,8 @@
+; managed by issabel-ccbs @VERSION@ -- optional manual-cancel feature code (EXPERIMENTAL).
+[from-internal-custom]
+exten => @CANCEL_CODE@,1,NoOp(CCBS: manual cancel requested by ${CALLERID(num)})
+ same => n,Answer()
+ same => n,CallCompletionCancel()
+ same => n,NoOp(CCBS: cancel result=${CC_CANCEL_RESULT} reason=${CC_CANCEL_REASON})
+ same => n,Playback(beep)
+ same => n,Hangup()

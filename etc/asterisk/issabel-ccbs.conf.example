@@ -1,0 +1,25 @@
+; Issabel CCBS - local settings (read by install.sh; re-run install.sh after editing).
+; Copy to /etc/asterisk/issabel-ccbs.conf. Missing keys fall back to the defaults shown.
+
+[general]
+; Prompt directory, relative to /var/lib/asterisk/sounds
+prompt_root=custom/ccbs/fa
+
+; DTMF digit that confirms the request, and seconds to wait for it (1-60)
+accept_digit=1
+input_timeout=7
+
+; Only offer CCBS when the caller is a registered Issabel extension (recommended).
+; 0 = offer to every caller that reaches the Busy branch (includes trunk callers!).
+require_local_device=1
+
+; CCSS timers (seconds). offer_timer must be longer than busy+offer prompts + input_timeout.
+offer_timer=30
+ccbs_available_timer=3600
+ccnr_available_timer=3600
+cc_recall_timer=20
+cc_max_monitors=5
+
+; EXPERIMENTAL: dial this code from the phone to cancel its pending CCBS request.
+manual_cancel_enabled=0
+manual_cancel_code=*31

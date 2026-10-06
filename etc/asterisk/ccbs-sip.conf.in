@@ -1,0 +1,11 @@
+; managed by issabel-ccbs @VERSION@ -- do not edit inside this block.
+; CCSS policies belong in the channel-driver config (NOT in ccss.conf).
+; Requires chan_sip: CCSS is not implemented for PJSIP.
+cc_agent_policy=generic
+cc_monitor_policy=generic
+cc_offer_timer=@OFFER_TIMER@
+ccbs_available_timer=@CCBS_AVAILABLE_TIMER@
+ccnr_available_timer=@CCNR_AVAILABLE_TIMER@
+cc_recall_timer=@RECALL_TIMER@
+cc_max_monitors=@MAX_MONITORS@
+cc_callback_sub=ccbs-callback,s,1

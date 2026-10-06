@@ -1,0 +1,52 @@
+#!/bin/bash
+# Issabel CCBS health check. Exit code = number of FAIL items (warnings do not count).
+set -u
+PREFIX="${CCBS_PREFIX:-/opt/issabel-ccbs}"
+LIB="$PREFIX/lib/ccbs-common.sh"
+[[ -f "$LIB" ]] || LIB="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../lib" 2>/dev/null && pwd)/ccbs-common.sh"
+# shellcheck source=/dev/null
+source "$LIB" 2>/dev/null || { echo "ERROR: cannot load $LIB" >&2; exit 2; }
+ccbs_find_asterisk || { echo "ERROR: asterisk CLI not found" >&2; exit 2; }
+
+FAILS=0; WARNS=0
+ok()   { printf 'OK    %s\n' "$*"; }
+warn() { WARNS=$((WARNS + 1)); printf 'WARN  %s\n' "$*"; }
+fail() { FAILS=$((FAILS + 1)); printf 'FAIL  %s\n' "$*"; }
+
+VERSION="$(tr -d '[:space:]' < "$PREFIX/VERSION" 2>/dev/null || echo unknown)"
+echo "=== Issabel CCBS $VERSION health check ==="
+
+ver="$(ast 'core show version' | head -n 1)"
+[[ -n "$ver" ]] && ok "$ver" || { fail "Asterisk is not running"; exit "$FAILS"; }
+
+ast_has 'module show like chan_sip' 'chan_sip' && ok "chan_sip loaded" || fail "chan_sip not loaded (CCSS does not work on PJSIP)"
+ast_has 'module show like res_ccss' 'res_ccss' && ok "res_ccss loaded" || fail "res_ccss not loaded"
+
+SIPG="$CCBS_ETC/sip_general_custom.conf"
+if grep -qE "$CCBS_BEGIN_RE" "$SIPG" 2>/dev/null && grep -q '^cc_agent_policy=generic' "$SIPG" && grep -q '^cc_monitor_policy=generic' "$SIPG"; then
+  ok "CC policies present in sip_general_custom.conf"
+else fail "CC policies missing in sip_general_custom.conf (re-run install.sh)"; fi
+grep -Eq '^[[:space:]]*#include[[:space:]]+"?sip_general_custom\.conf' "$CCBS_ETC/sip.conf" 2>/dev/null \
+  && ok "sip.conf includes sip_general_custom.conf" || fail "sip.conf does not include sip_general_custom.conf"
+grep -rEqs '^[[:space:]]*callcounter[[:space:]]*=[[:space:]]*yes' "$CCBS_ETC"/sip*.conf \
+  && ok "callcounter=yes" || warn "callcounter=yes not found (SIP busy state may be unreliable)"
+if grep -qE '^cc_(agent|monitor)_policy=' "$CCBS_ETC/ccss.conf" 2>/dev/null; then
+  warn "ccss.conf contains cc_*_policy lines; Asterisk ignores them there (leftover from an old release?)"
+fi
+
+ast_has 'dialplan show s-BUSY@macro-dial-one' 'Gosub(ccbs-offer' && ok "Busy hook active in macro-dial-one" || fail "Busy hook not active"
+ast_has 'dialplan show s@ccbs-offer' 'CallCompletionRequest' && ok "ccbs-offer context loaded" || fail "ccbs-offer context missing"
+ast_has 'dialplan show s@ccbs-callback' 'Return' && ok "ccbs-callback context loaded" || fail "ccbs-callback context missing"
+
+PROMPT_ROOT="$(ccbs_cfg prompt_root custom/ccbs/fa)"
+for f in busy offer accepted cancelled failed; do
+  p="$CCBS_SOUND_BASE/$PROMPT_ROOT/$f.wav"
+  if [[ ! -f "$p" ]]; then fail "prompt missing: $p"
+  elif ccbs_wav_ok "$p"; then ok "prompt $f.wav ($(ccbs_wav_seconds "$p")s)"
+  else warn "prompt $f.wav is not PCM 16-bit mono 8 kHz (Asterisk will transcode; quality/CPU impact)"; fi
+done
+
+if ast_has 'database get ccbs disabled' 'Value:'; then warn "CCBS is currently DISABLED (kill switch). Enable: issabel-ccbs-ctl enable"; else ok "CCBS enabled (kill switch off)"; fi
+echo "--- pending CC requests ---"; ast 'cc report status'
+echo "=== $FAILS failure(s), $WARNS warning(s) ==="
+exit "$FAILS"

@@ -1,0 +1,35 @@
+#!/bin/bash
+# Minimal Asterisk CLI stub used ONLY by tests/install_test.sh.
+# Behaviour is derived from the sandbox config dir ($CCBS_ETC_DIR) so the installer can be verified end to end.
+[[ "$1" == "-rx" ]] || exit 1
+ETC="${CCBS_ETC_DIR:?}"
+OVR="$ETC/extensions_override_issabelpbx.conf"
+hooked() { grep -q 'Gosub(ccbs-offer,s,1)' "$OVR" 2>/dev/null; }
+case "$2" in
+  "core show version") echo "Asterisk 16.30.0 built by root @ fake on a x86_64 running Linux" ;;
+  "module show like chan_sip")
+    if [[ "${FAKE_NO_SIP:-0}" == 1 ]]; then echo "0 modules loaded"; else
+      echo "Module                         Description                              Use Count  Status      Support Level"
+      echo "chan_sip.so                    Session Initiation Protocol (SIP)        0          Running              core"
+      echo "1 modules loaded"; fi ;;
+  "module show like res_ccss")
+    echo "Module                         Description                              Use Count  Status      Support Level"
+    echo "res_ccss.so                    Call Completion Supplementary Services   0          Running              core"
+    echo "1 modules loaded" ;;
+  "dialplan show macro-dial-one") echo "[ Context 'macro-dial-one' created by 'pbx_config' ]"; echo "  's-BUSY' =>  1. NoOp(orig)   [pbx_config]" ;;
+  "dialplan show s-BUSY@macro-dial-one")
+    echo "[ Context 'macro-dial-one' created by 'pbx_config' ]"
+    if hooked; then echo "  's-BUSY' =>       1. Gosub(ccbs-offer,s,1)   [pbx_config]"; else echo "  's-BUSY' =>       1. NoOp(Extension is reporting BUSY)   [pbx_config]"; fi
+    echo "                    2. Playtones(busy)     [pbx_config]"
+    echo "                    3. Busy(20)            [pbx_config]" ;;
+  "dialplan show s@ccbs-offer")
+    if hooked; then echo "  's' =>  1. NoOp(CCBS)"; echo "          9. CallCompletionRequest()"; else echo "There is no existence of 's@ccbs-offer' extension"; fi ;;
+  "dialplan show s@ccbs-callback") if hooked; then echo "  's' => 1. NoOp(x)"; echo "         2. Return()"; fi ;;
+  "sip reload"|"dialplan reload") echo "Reloading" ;;
+  "database get ccbs disabled") [[ -f "$ETC/.fake-disabled" ]] && echo "Value: 1" || echo "Database entry not found." ;;
+  "database put ccbs disabled 1") touch "$ETC/.fake-disabled"; echo "Updated database successfully" ;;
+  "database del ccbs disabled")   rm -f "$ETC/.fake-disabled"; echo "Database entry removed." ;;
+  "cc report status") echo "0 Call completion transactions" ;;
+  "cc cancel "*) echo "cancelled ${2#cc cancel }" ;;
+  *) echo "No such command '$2'" ;;
+esac

@@ -1,0 +1,31 @@
+#!/bin/bash
+# Day-to-day control of Issabel CCBS without touching config files.
+set -u
+PREFIX="${CCBS_PREFIX:-/opt/issabel-ccbs}"
+# shellcheck source=/dev/null
+source "$PREFIX/lib/ccbs-common.sh" 2>/dev/null || { echo "ERROR: $PREFIX/lib/ccbs-common.sh not found" >&2; exit 2; }
+ccbs_find_asterisk || { echo "ERROR: asterisk CLI not found" >&2; exit 2; }
+
+usage() {
+  cat <<USAGE
+Usage: issabel-ccbs-ctl <command>
+  status            show enabled/disabled state and pending CC requests
+  enable            allow CCBS offers again (removes the kill switch)
+  disable           stop offering CCBS immediately (no reload needed; pending requests continue)
+  list              show pending CC requests (cc report status)
+  cancel <id|all>   cancel a pending CC request (id from 'list')
+  check             run the full health check
+USAGE
+}
+
+case "${1:-}" in
+  status)  if ast_has 'database get ccbs disabled' 'Value:'; then echo "CCBS offers: DISABLED"; else echo "CCBS offers: ENABLED"; fi; ast 'cc report status' ;;
+  enable)  ast 'database del ccbs disabled' >/dev/null; echo "CCBS offers: ENABLED" ;;
+  disable) ast 'database put ccbs disabled 1' >/dev/null; echo "CCBS offers: DISABLED" ;;
+  list)    ast 'cc report status' ;;
+  cancel)  [[ -n "${2:-}" ]] || { usage; exit 2; }
+           [[ "$2" == all || "$2" =~ ^[0-9]+$ ]] || { echo "cancel needs a numeric id or 'all'" >&2; exit 2; }
+           ast "cc cancel $2" ;;
+  check)   exec "$(dirname "$0")/issabel-ccbs-check" ;;
+  *)       usage; exit 2 ;;
+esac

@@ -1,0 +1,11 @@
+; /etc/asterisk/ccss.conf is OPTIONAL for issabel-ccbs and is NOT modified by the installer.
+;
+; Do NOT put cc_agent_policy / cc_monitor_policy / cc_*_timer here: Asterisk ignores
+; them in this file ("The options ... should NOT be set in this file"). Issabel CCBS
+; writes them to sip_general_custom.conf instead.
+;
+; The only things that make sense here:
+[general]
+; Global limit of simultaneous CC requests (every busy-offer occupies a slot until
+; cc_offer_timer expires). Raise it on very busy PBXs.
+;cc_max_requests = 20

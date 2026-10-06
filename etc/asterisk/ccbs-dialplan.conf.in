@@ -1,0 +1,36 @@
+; managed by issabel-ccbs @VERSION@ -- do not edit inside this block.
+; Change /etc/asterisk/issabel-ccbs.conf and re-run install.sh instead.
+
+[macro-dial-one]
+; Only priority 1 of s-BUSY is taken over. The original priority 1 is shadowed
+; (Asterisk may log a harmless "already in use" warning on reload); priorities 2+
+; of Issabel's own s-BUSY branch still run whenever the hook does Return(), so
+; busy tone / voicemail-on-busy keep working for callers who decline.
+exten => s-BUSY,1,Gosub(ccbs-offer,s,1)
+
+[ccbs-offer]
+exten => s,1,NoOp(CCBS: busy offer caller=${CALLERID(num)} dialed=${DIALEDPEERNUMBER})
+ same => n,GotoIf(${DB_EXISTS(ccbs/disabled)}?skip)
+ same => n,Set(CCBS_DEV=${CUT(CHANNEL,/,2)})
+ same => n,Set(CCBS_DEV=${CUT(CCBS_DEV,-,1)})
+@ELIGIBLE_CHECK@
+ same => n(eligible),Answer()
+ same => n,Playback(@PROMPT_ROOT@/busy)
+ same => n,Read(CCBS_CHOICE,@PROMPT_ROOT@/offer,1,,1,@INPUT_TIMEOUT@)
+ same => n,GotoIf($["${CCBS_CHOICE}"="@ACCEPT_DIGIT@"]?request)
+ same => n,Playback(@PROMPT_ROOT@/cancelled)
+ same => n,Return()
+ same => n(request),CallCompletionRequest()
+ same => n,NoOp(CCBS: result=${CC_REQUEST_RESULT} reason=${CC_REQUEST_REASON} caller=${CCBS_DEV} dialed=${DIALEDPEERNUMBER})
+ same => n,UserEvent(CCBSRequest,Caller: ${CCBS_DEV},Callee: ${DIALEDPEERNUMBER},Result: ${CC_REQUEST_RESULT},Reason: ${CC_REQUEST_REASON})
+ same => n,GotoIf($["${CC_REQUEST_RESULT}"="SUCCESS"]?accepted)
+ same => n,Playback(@PROMPT_ROOT@/failed)
+ same => n,Return()
+ same => n(accepted),Playback(@PROMPT_ROOT@/accepted)
+ same => n,Hangup()
+ same => n(skip),Return()
+
+[ccbs-callback]
+; Run by CCSS (cc_callback_sub) on the recall leg once the original caller answers.
+exten => s,1,NoOp(CCBS: caller ${CALLERID(num)} answered the recall)
+ same => n,Return()
