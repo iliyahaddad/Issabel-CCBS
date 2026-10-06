@@ -1,4 +1,3 @@
-:::writing{variant="document" id="58321" title="Issabel CCBS — Call Completion on Busy Subscriber"}
 
 # Issabel CCBS — Call Completion on Busy Subscriber
 
