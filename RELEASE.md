@@ -1,4 +1,3 @@
-حتماً. این نسخه برای یک فایل `RELEASE.md` طبیعی و حرفه‌ای است:
 
 # Issabel CCBS 1.2.0 Release
 
@@ -28,4 +27,3 @@ Re-running `install.sh` is safe and **idempotent**.
 
 - A real end-to-end test with SIP phones could not be performed in the build environment. Static tests and installer tests in a sandbox (using an Asterisk stub) have been completed. The actual CCSS behavior and the `macro-dial-one` structure on your Issabel system must be verified in staging.
 - **chan\_sip only**, internal extensions only (generic agent/monitor).
-
