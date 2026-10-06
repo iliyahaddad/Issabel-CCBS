@@ -1,21 +1,31 @@
+حتماً. این نسخه برای یک فایل `RELEASE.md` طبیعی و حرفه‌ای است:
+
 # Issabel CCBS 1.2.0 Release
 
-## هدف
-نسخهٔ 1.2 یک نسخهٔ «اصلاح و سخت‌سازی» است: مهم‌ترین باگ‌های نسخه‌های قبل (محل اشتباه تنظیمات CCSS، ادعای پشتیبانی PJSIP، جایگزینی کامل شاخهٔ Busy و Answer شدن تماس‌های Trunk) رفع شده است.
+## Purpose
 
-## قبل از ارتقا
-1. از `/etc/asterisk` بک‌آپ کامل بگیرید (نصاب هم خودکار بک‌آپ می‌گیرد).
-2. `sudo bash install.sh --check` را اجرا کنید؛ هیچ تغییری نمی‌دهد.
-3. سیستم باید **chan_sip** داشته باشد. روی PJSIP-only، CCSS در Asterisk پیاده‌سازی نشده است.
+Version 1.2 is a **fix and hardening release**. It addresses the most important issues from previous versions, including the incorrect CCSS configuration location, the misleading claim of PJSIP support, complete replacement of the Busy branch, and answering Trunk calls.
 
-## ارتقا از 1.0 / 1.1
-نصاب بلاک‌های قدیمی را پاک می‌کند، تنظیمات را در `sip_general_custom.conf` می‌نویسد، Hook را جایگزین می‌کند و Promptهای قدیمی را به Backup می‌برد. اجرای دوباره‌ی `install.sh` بی‌خطر (idempotent) است.
+## Before Upgrading
 
-## توصیه قبل از Production
-1. با دو داخلی آزمایشی Busy / Accept / Decline / Cancel را تست کنید (docs/TEST-PLAN.md).
-2. `issabel-ccbs-check` باید بدون FAIL باشد.
-3. در صورت مشکل: `issabel-ccbs-ctl disable` (فوری، بدون Reload) یا `scripts/rollback.sh`.
+1. Create a full backup of `/etc/asterisk` (the installer also creates an automatic backup).
+2. Run `sudo bash install.sh --check`; this performs checks only and makes no changes.
+3. The system must have **chan\_sip**. On PJSIP-only systems, CCSS is not implemented in Asterisk.
 
-## محدودیت‌ها
-- تست End-to-End واقعی با گوشی SIP در محیط build ممکن نبود. تست‌های static و تست نصاب در Sandbox (با stub برای Asterisk) انجام شده‌اند؛ رفتار واقعی CCSS و ساختار `macro-dial-one` در Issabel شما باید روی staging تأیید شود.
-- فقط `chan_sip`، فقط داخلی‌ها (Generic agent/monitor).
+## Upgrading from 1.0 / 1.1
+
+The installer removes the old blocks, writes the settings to `sip_general_custom.conf`, replaces the hook, and moves the old prompts to the backup.
+
+Re-running `install.sh` is safe and **idempotent**.
+
+## Recommended Before Production
+
+1. Test Busy / Accept / Decline / Cancel using two test extensions (`docs/TEST-PLAN.md`).
+2. `issabel-ccbs-check` should complete with no FAILs.
+3. If any problems occur, use `issabel-ccbs-ctl disable` for an immediate kill-switch without a reload, or run `scripts/rollback.sh`.
+
+## Limitations
+
+- A real end-to-end test with SIP phones could not be performed in the build environment. Static tests and installer tests in a sandbox (using an Asterisk stub) have been completed. The actual CCSS behavior and the `macro-dial-one` structure on your Issabel system must be verified in staging.
+- **chan\_sip only**, internal extensions only (generic agent/monitor).
+
