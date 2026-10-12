@@ -148,4 +148,4 @@ sudo bash scripts/rollback.sh [BACKUP_DIR]      # Restores configuration files f
 
 ## License
 
-This project is licensed under the MIT license. See the [LICENSE](LICENSE) file for the full license text.
+ See the [LICENSE](LICENSE) file for the full license text.
